@@ -1,4 +1,4 @@
-import { type ChangeEvent, type CSSProperties, type FormEvent, useEffect, useMemo, useRef, useState, useCallback } from 'react'
+import { type ChangeEvent, type CSSProperties, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { Check, Clock, Copy, KeyRound, Mic, PauseCircle, UploadCloud, Settings as Gear, X } from 'lucide-react'
 import clsx from 'clsx'
 import './App.css'
@@ -20,7 +20,7 @@ const MODEL_OPTIONS = [
   },
 ]
 
-const isSupabaseConfigured = false
+// Removed Supabase configuration
 
 type HistoryEntry = {
   id: string
@@ -318,7 +318,7 @@ function App() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
-  const dataArrayRef = useRef<Uint8Array | null>(null)
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [settingsTab, setSettingsTab] = useState<'general' | 'transcription' | 'appearance' | 'history'>('general')
   const [showLanding, setShowLanding] = useState(() => readStorage('aurora-transcribe:onboarded') !== 'true')
@@ -400,10 +400,9 @@ function App() {
   }, [selectedModel])
 
   useEffect(() => {
-    if (user) return
     if (autoSaveHistory) writeStorage(STORAGE_KEYS.history, JSON.stringify(history))
     else removeStorage(STORAGE_KEYS.history)
-  }, [history, autoSaveHistory, user])
+  }, [history, autoSaveHistory])
 
   useEffect(() => {
     writeStorage('aurora-transcribe:onboarded', showLanding ? 'false' : 'true')
@@ -492,7 +491,7 @@ function App() {
     analyserRef.current.fftSize = 2048
     analyserRef.current.smoothingTimeConstant = 0.85
     const bufferLength = analyserRef.current.frequencyBinCount
-    dataArrayRef.current = new Uint8Array(bufferLength)
+    dataArrayRef.current = new Uint8Array(new ArrayBuffer(bufferLength))
     existingSource.connect(analyserRef.current)
 
     const draw = () => {
@@ -797,23 +796,6 @@ function App() {
         summary: summaryEnabled ? '' : undefined,
       }
       setHistory((prev) => [entry, ...prev].slice(0, 24))
-      if (user && supabase) {
-        await supabase
-          .from('transcripts')
-          .upsert(
-            {
-              id: entryId,
-              user_id: user.id,
-              created_at: new Date(createdAt).toISOString(),
-              duration_ms: durationMs ?? null,
-              model: selectedModel,
-              text: parsed.text,
-              source,
-              summary: summaryEnabled ? '' : null,
-            },
-            { onConflict: 'id' },
-          )
-      }
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : 'Unable to transcribe your audio. Try again.')
@@ -892,14 +874,6 @@ function App() {
           prev.map((entry) => (entry.id === targetId ? { ...entry, summary: finalSummary } : entry)),
         )
       }
-      if (user && targetId && supabase) {
-        const { error } = await supabase
-          .from('transcripts')
-          .update({ summary: finalSummary })
-          .eq('id', targetId)
-          .eq('user_id', user.id)
-        if (error) console.error(error)
-      }
     } catch (e) {
       console.error(e)
       setError(e instanceof Error ? e.message : 'Unable to generate summary')
@@ -908,41 +882,7 @@ function App() {
     }
   }
 
-  const handleAuthSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!supabase) {
-      setAuthError('Supabase is not configured. Provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable accounts.')
-      return
-    }
-    setAuthError(null)
-    setIsAuthLoading(true)
-    try {
-      if (authMode === 'signin') {
-        const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword })
-        if (error) throw error
-      } else {
-        const { error } = await supabase.auth.signUp({ email: authEmail, password: authPassword })
-        if (error) throw error
-        setAuthMode('signin')
-      }
-      setAuthEmail('')
-      setAuthPassword('')
-    } catch (err) {
-      console.error(err)
-      setAuthError(err instanceof Error ? err.message : 'Unable to authenticate')
-    } finally {
-      setIsAuthLoading(false)
-    }
-  }
-
-  const handleSignOut = async () => {
-    if (supabase) await supabase.auth.signOut()
-    setUser(null)
-    setHistory([])
-    setSummary('')
-    setCurrentEntryId(null)
-    setShowLanding(true)
-  }
+  // Removed authentication handlers - now browser-only
 
   const handleDownloadTranscript = () => {
     if (!transcript) return
@@ -973,17 +913,10 @@ function App() {
     setCurrentEntryId(entry.id)
   }
 
-  const handleClearHistory = async () => {
+  const handleClearHistory = () => {
     setHistory([])
     setSummary('')
     setCurrentEntryId(null)
-    if (user && supabase) {
-      const { error } = await supabase.from('transcripts').delete().eq('user_id', user.id)
-      if (error) {
-        console.error(error)
-        setError(error.message)
-      }
-    }
   }
 
   return (
@@ -1003,33 +936,11 @@ function App() {
             <div className="panel">
               <h2 style={{ marginTop: 0 }}>Aurora Transcribe</h2>
               <p className="muted">Fast, polished browser-based transcription. Bring your API key and go.</p>
-              {isSupabaseConfigured ? (
-                <form className="row" style={{ gap: 12 }} onSubmit={handleAuthSubmit}>
-                  <input className="input" type="email" placeholder="you@email.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} required />
-                  <input className="input" type="password" placeholder="Password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} required minLength={6} />
-                  {authError && <div className="error">{authError}</div>}
-                  <div className="actions" style={{ justifyContent: 'center' }}>
-                    <button className="btn" type="submit" disabled={isAuthLoading}>
-                      {isAuthLoading ? 'Please wait…' : authMode === 'signin' ? 'Sign in' : 'Create account'}
-                    </button>
-                    <button
-                      className="btn"
-                      type="button"
-                      onClick={() => setAuthMode((mode) => (mode === 'signin' ? 'signup' : 'signin'))}
-                    >
-                      {authMode === 'signin' ? 'Need an account?' : 'Have an account? Sign in'}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="actions" style={{ justifyContent: 'center' }}>
-                  <button className="btn" onClick={() => setShowLanding(false)}>Enter studio</button>
-                </div>
-              )}
+              <div className="actions" style={{ justifyContent: 'center' }}>
+                <button className="btn" onClick={() => setShowLanding(false)}>Enter studio</button>
+              </div>
               <p className="mini" style={{ marginTop: 4 }}>
-                {isSupabaseConfigured
-                  ? 'Signing in keeps your transcript history synced. Skipping uses local-only storage.'
-                  : 'Cloud sync requires Supabase configuration. Until then, everything stays local.'}
+                All transcripts and settings are stored locally in your browser.
               </p>
             </div>
           </div>
@@ -1040,13 +951,9 @@ function App() {
         <div className="topbar">
           <div className="brand">Aurora</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {user && <span className="muted small">{user.email}</span>}
             <button className="ghost" onClick={() => setShowSettings(true)}>
               <Gear size={16} /> Settings
             </button>
-            {user && (
-              <button className="ghost" onClick={handleSignOut}>Sign out</button>
-            )}
           </div>
         </div>
 
