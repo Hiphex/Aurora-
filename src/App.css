@@ -1,0 +1,53 @@
+.app { min-height: 100vh; width: 100%; display: flex; flex-direction: column; align-items: center; padding: 48px 16px; }
+.topbar { width: min(920px, 96vw); display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; }
+.brand { font-weight: 600; letter-spacing: -0.02em; }
+.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 8px 12px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+
+.center { width: min(920px, 96vw); display: grid; place-items: center; gap: 20px; margin-bottom: 24px; }
+.record {
+  width: 160px; height: 160px; border-radius: 999px; border: 12px solid #1a1a1a; display: grid; place-items: center;
+  background: var(--record-bg, radial-gradient(circle at 30% 30%, #ff7aa8, #ff3f7e 55%, #cc2a68 100%));
+  color: white; font-weight: 700; letter-spacing: .02em; cursor: pointer; user-select: none;
+  transition: background .25s ease, transform .08s ease, box-shadow .3s ease;
+  box-shadow: 0 0 44px -10px var(--record-color, #22c55e);
+}
+.record:hover { transform: translateY(-1px) scale(1.01); }
+.record:active { transform: scale(.985); }
+.record.recording { background: var(--record-bg-active, radial-gradient(circle at 30% 30%, #ffb07a, #ff6b3f 55%, #e64525 100%)); }
+.mini { color: var(--muted); font-size: 13px; }
+
+.panel { width: min(920px, 96vw); border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 14px; }
+.panel h3 { margin: 0 0 8px 0; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+.transcript { min-height: 180px; white-space: pre-wrap; line-height: 1.7; }
+.actions { display: flex; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: #111; color: var(--text); padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.wave { width: 100%; height: 64px; border-radius: 12px; border: 1px solid var(--border); background: #0f0f0f; }
+.error { padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(255, 107, 158, .4); background: rgba(255, 107, 158, .1); color: #ffd8e8; font-size: 14px; }
+
+/* Modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; }
+.sheet { width: min(720px, 94vw); max-height: calc(100vh - 80px); overflow: auto; background: #0c0c0c; border: 1px solid var(--border); border-radius: 16px; padding: 16px 16px 24px; box-sizing: border-box; }
+.sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.sheet h2 { margin: 0; font-size: 18px; }
+.muted { color: var(--muted); font-size: 13px; }
+.row { display: grid; gap: 8px; margin-bottom: 12px; }
+.row-inline { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.input { width: 100%; background: #0f0f0f; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.segment { padding: 8px 12px; background: #0f0f0f; color: var(--muted); cursor: pointer; border-right: 1px solid var(--border); }
+.segment:last-child { border-right: 0; }
+.segment.active { color: var(--text); background: #151515; }
+.small { font-size: 12px; }
+.history { display: grid; gap: 8px; }
+.history-item { padding: 10px 12px; background: #0f0f0f; border: 1px solid var(--border); border-radius: 10px; text-align: left; }
+.history-header { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+.history-preview { color: var(--text); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Appearance helpers */
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--border); cursor: pointer; }
+.swatch.active { outline: 2px solid #fff; outline-offset: 2px; }
+
+.btn[aria-pressed='true'] { background: #1a1a1a; border-color: rgba(255, 255, 255, .08); box-shadow: 0 0 0 1px rgba(255, 255, 255, .04); }
